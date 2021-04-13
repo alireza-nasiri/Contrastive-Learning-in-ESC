@@ -8,12 +8,12 @@ import sys
 import torch.nn.functional as F
 import torchvision
 
-import model_classifier
-import model_projection
+from models import model_classifier
+from models import model_projection
 
-from utils import EarlyStopping, WarmUpExponentialLR
+from utils.utils import EarlyStopping, WarmUpExponentialLR
 import config
-import loss
+from loss_fn import contrastive_loss
 
 if config.ESC_10:
         import dataset_ESC10 as dataset
@@ -44,7 +44,7 @@ train_loader, val_loader = dataset.create_generators()
 
 
 # defining supervised contrastive loss
-loss_fn = loss.SupConLoss(temperature = config.temperature)
+loss_fn = contrastive_loss.SupConLoss(temperature = config.temperature)
 
 optimizer = torch.optim.AdamW(list(model.parameters()) + list(projection_head.parameters()),
 	lr=config.lr, weight_decay=1e-3) 
@@ -97,7 +97,7 @@ def train_contrastive():
         
 			train_loss = []
            
-			for x, label in train_loader:
+			for _, x, label in train_loader:
 				batch_loss = 0
 				optimizer.zero_grad()
             
@@ -125,7 +125,7 @@ def train_contrastive():
 			projection_head.eval()
         
 			with torch.no_grad():
-				for val_x, val_label in val_loader:
+				for _, val_x, val_label in val_loader:
 					val_x = val_x.to(device)
 					label = val_label.to(device).unsqueeze(1)
 					label_vec = hotEncoder(label)
@@ -161,11 +161,6 @@ def train_contrastive():
 
 if __name__ == "__main__":
 	train_contrastive()
-
-
-
-
-
 
 
 
